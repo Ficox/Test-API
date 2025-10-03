@@ -1,11 +1,24 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="FastAPI GHCR Example")
+app = FastAPI(title="Counter API")
 
-@app.get("/")
-def read_root():
-    return {"ok": True, "service": "fastapi-ghcr-example"}
+# Allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/health")
-def health():
-    return {"status": "healthy"}
+counter = {"value": 0}
+
+@app.get("/counter")
+def get_counter():
+    return {"counter": counter["value"]}
+
+@app.post("/increment")
+def increment_counter():
+    counter["value"] += 1
+    return {"counter": counter["value"]}
