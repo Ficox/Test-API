@@ -22,3 +22,7 @@ def get_counter():
 def increment_counter():
     counter["value"] += 1
     return {"counter": counter["value"]}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
