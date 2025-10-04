@@ -1,0 +1,53 @@
+name: build-and-push-on-merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev, qa, uat, main]
+
+jobs:
+  docker:
+    if: github.event.pull_request.merged == true
+    runs-on: self-hosted
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE: ghcr.io/${{ github.repository_owner }}/test-api
+      ENV: ${{ github.ref_name == 'main' && 'prod' || github.ref_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=${{ env.ENV }}-latest
+            type=raw,value=${{ env.ENV }}-${{ github.sha }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Rollout restart test-api
+        run: |
+          kubectl -n test-${{ env.ENV }} rollout restart deployment/test-api
+          kubectl -n test-${{ env.ENV }} rollout status deployment/test-api
