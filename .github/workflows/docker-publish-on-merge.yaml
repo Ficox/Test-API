@@ -10,9 +10,13 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: self-hosted
 
+    permissions:
+      contents: read
+      packages: write
+
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+      IMAGE: ghcr.io/${{ github.repository_owner }}/test-api
       ENV: ${{ github.ref_name == 'main' && 'prod' || github.ref_name }}
 
     steps:
@@ -30,7 +34,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE }}
           tags: |
             type=raw,value=${{ env.ENV }}-latest
             type=raw,value=${{ env.ENV }}-${{ github.sha }}
