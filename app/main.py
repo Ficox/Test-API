@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from filelock import FileLock
 
-app = FastAPI(title="Counter API")
+app = FastAPI(title="Counter API", version="1.0.0")
 
 # Allow frontend requests
 app.add_middleware(
