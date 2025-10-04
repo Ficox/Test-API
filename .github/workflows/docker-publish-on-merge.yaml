@@ -3,7 +3,7 @@ name: build-and-push-on-merge
 on:
   pull_request:
     types: [closed]
-    branches: [dev, qa, uat, prod]
+    branches: [dev, qa, uat, main]
 
 jobs:
   docker:
@@ -17,7 +17,6 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }} # owner/repo
-      ENV_NAME: ${{ github.ref_name }}     # dev | qa | uat | prod
 
     concurrency:
       group: docker-${{ github.ref_name }}
@@ -34,16 +33,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set ENV value
+        id: setenv
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "ENV=prod" >> $GITHUB_ENV
+          else
+            echo "ENV=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+          fi
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # env-scoped latest
-            type=raw,value=${{ env.ENV_NAME }}-latest
-            # traceable commit tag per env
-            type=raw,value=${{ env.ENV_NAME }}-${{ github.sha }}
+            type=raw,value=${{ env.ENV }}-latest
+            type=raw,value=${{ env.ENV }}-${{ github.sha }}
 
       - name: Build and push
         uses: docker/build-push-action@v5
